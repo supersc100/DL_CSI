@@ -56,7 +56,7 @@ class CSIEmbeddingLayer(nn.Module):
         position_ids = position_ids.unsqueeze(0).expand(batch_size, -1)  # [batch, seq_len]
         position_embeddings = self.position_embeddings(position_ids)  # [batch, seq_len, hidden_size]
 
-        # 3. combine feature and position
+        # 3. combine fearure and position组合特征和位置编码
         hidden_states = csi_features + position_embeddings
 
         # 4. LayerNorm (可选，如果DeepSeek模型有)
