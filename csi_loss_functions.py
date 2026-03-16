@@ -1,6 +1,6 @@
 class CSILoss(nn.Module):
     """
-    CSI预测的自定义损失函数
+    definition loss function of CSI prediction
     """
 
     def __init__(self,
@@ -13,10 +13,10 @@ class CSILoss(nn.Module):
         self.correlation_weight = correlation_weight
 
     def complex_mse_loss(self, pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        """复数MSE损失"""
-        # 假设输入是展平的实部和虚部
+        """complex MSE loss"""
+        # Assume expanded real and imag as input
         batch_size, seq_len, features = pred.shape
-        # 重构成复数形式 [batch, seq_len, features//2]
+        # reconstruct to complex [batch, seq_len, features//2]
         pred_real = pred[:, :, :features // 2]
         pred_imag = pred[:, :, features // 2:]
         target_real = target[:, :, :features // 2]
@@ -28,49 +28,49 @@ class CSILoss(nn.Module):
         return (mse_real + mse_imag) / 2
 
     def phase_cosine_loss(self, pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        """相位余弦相似度损失"""
+        """Phase cosine similarity loss"""
         batch_size, seq_len, features = pred.shape
         pred_real = pred[:, :, :features // 2]
         pred_imag = pred[:, :, features // 2:]
         target_real = target[:, :, :features // 2]
         target_imag = target[:, :, features // 2:]
 
-        # 计算幅度和相位
+        # calculate magnitude and phase
         pred_magnitude = torch.sqrt(pred_real ** 2 + pred_imag ** 2 + 1e-8)
         target_magnitude = torch.sqrt(target_real ** 2 + target_imag ** 2 + 1e-8)
 
         pred_phase = torch.atan2(pred_imag, pred_real)
         target_phase = torch.atan2(target_imag, target_real)
 
-        # 相位余弦相似度
+        # phase cosine similarity loss
         phase_cosine = torch.cos(pred_phase - target_phase)
         phase_loss = 1 - phase_cosine.mean()
 
         return phase_loss
 
     def correlation_loss(self, pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        """相关性损失，鼓励保持信道结构"""
+        """correlation loss, keep structure of channel"""
         batch_size, seq_len, features = pred.shape
 
-        # 展平批次和序列维度
+        # expand batch and vector dimensionality
         pred_flat = pred.view(batch_size * seq_len, features)
         target_flat = target.view(batch_size * seq_len, features)
 
-        # 计算相关系数矩阵
+        # calculate correlation coefficient matrix
         pred_corr = torch.corrcoef(pred_flat.T)
         target_corr = torch.corrcoef(target_flat.T)
 
-        # 确保矩阵是有效的
+        # verify validity of matrix
         pred_corr = torch.nan_to_num(pred_corr, nan=0.0)
         target_corr = torch.nan_to_num(target_corr, nan=0.0)
 
-        # 计算Frobenius范数
+        # calculate Frobenius norm
         corr_loss = F.mse_loss(pred_corr, target_corr)
 
         return corr_loss
 
     def forward(self, pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        """总损失"""
+        """Total loss"""
         mse_loss = self.complex_mse_loss(pred, target)
         phase_loss = self.phase_cosine_loss(pred, target)
         corr_loss = self.correlation_loss(pred, target)
