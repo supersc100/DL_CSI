@@ -1,3 +1,7 @@
+import torch
+
+import sionna_csi_generator
+import csi_data_loader
 def main():
     """主程序：集成Sionna CSI生成与DeepSeek模型训练"""
     print("=" * 60)
@@ -6,8 +10,9 @@ def main():
 
     # 步骤1: 生成CSI数据集
     print("\n[1/4] 生成CSI数据集...")
-    generator = SionnaCSIGenerator(
+    generator = sionna_csi_generator.SionnaCSIGenerator(
         carrier_freq=3.5e9,
+        uplink_carrier_freq=3.6e9,
         subcarrier_spacing=30e3,  # 30kHz子载波间隔
         num_subcarriers=64,
         num_antennas_bs=4,
@@ -31,7 +36,7 @@ def main():
     print("\n[2/4] 创建数据加载器...")
     from torch.utils.data import DataLoader
 
-    train_dataset = CSIDataset(
+    train_dataset = csi_data_loader.CSIDataset(
         "csi_data/training_dataset.h5",
         split='train',
         train_ratio=0.7,
@@ -39,7 +44,7 @@ def main():
         normalize=True
     )
 
-    val_dataset = CSIDataset(
+    val_dataset = csi_data_loader.CSIDataset(
         "csi_data/training_dataset.h5",
         split='val',
         train_ratio=0.7,

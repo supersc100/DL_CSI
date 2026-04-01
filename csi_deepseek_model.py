@@ -1,3 +1,8 @@
+import torch
+import torch.nn as nn
+from transformers import AutoModelForCausalLM, AutoConfig
+from peft import LoraConfig, get_peft_model, TaskType
+import csi_embedding_layer
 class CSIDeepSeekModel(nn.Module):
     """
     CSI prediction model based on DeepSeek
@@ -30,10 +35,10 @@ class CSIDeepSeekModel(nn.Module):
         print("parameters of base model is frozen")
 
         # 4. replace Embdding layer
-        self.csi_embedding = CSIEmbeddingLayer(self.config, csi_input_dim)
+        self.csi_embedding = csi_embedding_layer.CSIEmbeddingLayer(self.config, csi_input_dim)
         self.base_model.model.embed_tokens = self.csi_embedding
 
-        # 5. fine tuning by LoRA
+        # 5. fine-tuning by LoRA
         if use_lora:
             lora_config = LoraConfig(
                 task_type=TaskType.CAUSAL_LM,
@@ -112,6 +117,7 @@ class CSIDeepSeekModel(nn.Module):
 
     def load_model(self, path: str):
         """load model"""
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         checkpoint = torch.load(path, map_location=device)
         self.load_state_dict(checkpoint['model_state_dict'])
         print(f"model is loaded from {path}")

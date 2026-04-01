@@ -1,3 +1,9 @@
+import torch
+
+import csi_deepseek_model
+import csi_data_processor
+import csi_loss_functions
+import numpy as np
 class CSIPredictor:
     """
     CSI预测器 - 部署和使用接口
@@ -8,7 +14,7 @@ class CSIPredictor:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         # 初始化模型架构
-        self.model = CSIDeepSeekModel(
+        self.model = csi_deepseek_model.CSIDeepSeekModel(
             model_name="deepseek-ai/deepseek-llm-7b-chat",
             csi_input_dim=128,
             csi_output_dim=128,
@@ -22,7 +28,7 @@ class CSIPredictor:
         self.model.eval()
 
         # 初始化处理器
-        self.processor = CSIDataProcessor()
+        self.processor = csi_data_processor.CSIDataProcessor()
 
         print(f"CSI预测器已加载，使用设备: {self.device}")
 
@@ -84,7 +90,7 @@ class CSIPredictor:
             predictions = self.model(downlink_tensor)
 
             # 计算损失
-            criterion = CSILoss()
+            criterion = csi_loss_functions.CSILoss()
             loss, loss_dict = criterion(predictions, uplink_tensor)
 
             # 计算NMSE
@@ -114,7 +120,7 @@ if __name__ == "__main__":
     predictor = CSIPredictor()
 
     # 生成测试数据
-    processor = CSIDataProcessor()
+    processor = csi_data_processor.CSIDataProcessor()
     test_downlink, test_uplink = processor.generate_synthetic_data(num_samples=10)
 
     # 单样本预测

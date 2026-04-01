@@ -1,3 +1,6 @@
+import torch
+
+import csi_loss_functions
 class CSITrainingPipeline:
     """
     CSI training pipline
@@ -9,7 +12,7 @@ class CSITrainingPipeline:
         self.device = device
 
         # loss function
-        self.criterion = CSILoss(
+        self.criterion = csi_loss_functions.CSILoss(
             mse_weight=1.0,
             phase_weight=0.5,
             correlation_weight=0.3

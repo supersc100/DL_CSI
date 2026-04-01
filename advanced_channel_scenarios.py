@@ -1,3 +1,5 @@
+import numpy as np
+import sionna_csi_generator
 class AdvancedCSIGenerator:
     """
     高级CSI生成器，支持多种场景和信道效应
@@ -26,7 +28,7 @@ class AdvancedCSIGenerator:
             print(f"\n生成场景: {scenario_name}")
 
             # 创建对应场景的生成器
-            generator = SionnaCSIGenerator(
+            generator = sionna_csi_generator.SionnaCSIGenerator(
                 scenario=params["model"],
                 delay_spread=params["delay_spread"],
                 ue_speed=params["ue_speed"]

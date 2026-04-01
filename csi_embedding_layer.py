@@ -1,3 +1,6 @@
+import torch
+import torch.nn as nn
+
 class CSIEmbeddingLayer(nn.Module):
     """
     replace Embedding layer of DeepSeek precisly

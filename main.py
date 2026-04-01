@@ -1,3 +1,14 @@
+import torch
+import matplotlib.pyplot as plt
+import numpy as np
+
+import csi_data_processor
+import csi_data_loader
+import csi_deepseek_model
+import training_pipeline
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 def main():
     """main"""
     print("=" * 60)
@@ -5,7 +16,7 @@ def main():
     print("=" * 60)
 
     # 1. initialize CSI processed初始化CSI处理器
-    processor = CSIDataProcessor(
+    processor = csi_data_processor.CSIDataProcessor(
         seq_len=64,
         num_antennas=4,
         num_subcarriers=64
@@ -36,7 +47,7 @@ def main():
 
     # 4. initialize model
     print("\n[2/4] model initialization...")
-    model = CSIDeepSeekModel(
+    model = csi_deepseek_model.CSIDeepSeekModel(
         model_name="deepseek-ai/deepseek-llm-7b-chat",
         csi_input_dim=128,  # calculate based on processor.seq_len and feature number
         csi_output_dim=128,  # shape of output is same as that of input
@@ -46,7 +57,7 @@ def main():
 
     # 5. Construct training pipline
     print("\n[3/4]  Construct training pipline...")
-    pipeline = CSITrainingPipeline(model, processor, device=device)
+    pipeline = training_pipeline.CSITrainingPipeline(model, processor, device=device)
 
     # 6. training model
     print("\n[4/4] Start Training...")

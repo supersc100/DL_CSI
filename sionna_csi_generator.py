@@ -49,11 +49,11 @@ class SionnaCSIGenerator:
             "min_speed": 0.0
         }
         # generate CDL channel model (3GPP TR 38.901)
-        self.cdl_down = CDL(carrier_frequency=self.carrier_freq,
+        self.cdl_down = sionna.CDL(carrier_frequency=self.carrier_freq,
                             seed=self.seed,
                             **common_kwargs)
         # 上行信道模型（使用相同种子保证路径几何一致）
-        self.cdl_up = CDL(carrier_frequency=self.uplink_carrier_freq,
+        self.cdl_up = sionna.CDL(carrier_frequency=self.uplink_carrier_freq,
                           seed=self.seed,  # 相同种子确保随机相位、角度等一致
                           **common_kwargs)
 
@@ -258,3 +258,7 @@ class SionnaCSIGenerator:
         plt.tight_layout()
         plt.savefig('csi_visualization.png', dpi=300)
         plt.show()
+
+
+class CSIDataset:
+    pass

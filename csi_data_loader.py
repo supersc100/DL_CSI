@@ -1,8 +1,8 @@
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 import h5py
 import numpy as np
-from typing import Optional, Tuple
+from typing import Tuple
 
 
 class CSIDataset(Dataset):
