@@ -12,13 +12,12 @@ def main():
     print("\n[1/4] 生成CSI数据集...")
     generator = sionna_csi_generator.SionnaCSIGenerator(
         carrier_freq=3.5e9,
-        uplink_carrier_freq=3.6e9,
         subcarrier_spacing=30e3,  # 30kHz子载波间隔
         num_subcarriers=64,
         num_antennas_bs=4,
         num_antennas_ue=2,
         bandwidth=100e6,
-        scenario="UMi"
+        scenario="B"
     )
 
     # 可视化示例

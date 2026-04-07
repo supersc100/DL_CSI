@@ -1,8 +1,11 @@
 import tensorflow as tf
 import sionna
 import numpy as np
-from sionna.channel import *
-from sionna.utils import *
+from sionna.phy.channel import *
+from sionna.phy.ofdm import ResourceGrid, ResourceGridMapper, LSChannelEstimator, LMMSEEqualizer, \
+                            OFDMModulator, OFDMDemodulator, RZFPrecoder, RemoveNulledSubcarriers
+from sionna.phy.channel.tr38901 import AntennaArray, CDL
+# from sionna.utils import *
 import h5py
 from tqdm import tqdm
 import matplotlib.pyplot as plt
@@ -17,17 +20,15 @@ class SionnaCSIGenerator:
 
     def __init__(self,
                  carrier_freq: float = 3.5e9,  # 3.5GHz (typical frequency band)
-                 uplink_carrier_freq: float = None,  # 上行载波频率，若为None则视为TDD
                  subcarrier_spacing: float = 15e3,  # 15kHz
                  num_subcarriers: int = 64,  # submariners
                  num_antennas_bs: int = 4,  # antenna bs
                  num_antennas_ue: int = 2,  # antenna ue
                  bandwidth: float = 100e6,  # 100MHz bandwidth
-                 scenario: str = "UMi",
-                 seed: int = 42):  # 3GPP UMi
+                 scenario: str = "B",
+                 seed: int = 42):  # 3GPP CDL-B
         # channel paras config
         self.carrier_freq = carrier_freq
-        self.uplink_carrier_freq = uplink_carrier_freq if uplink_carrier_freq is not None else carrier_freq
         self.seed = seed
         self.subcarrier_spacing = subcarrier_spacing
         self.num_subcarriers = num_subcarriers
@@ -42,23 +43,38 @@ class SionnaCSIGenerator:
     def _init_channel_model(self):
         """3GPP channel model initialization"""
         # common paras（except freq）
+
+        ut_array = AntennaArray(num_rows=1,
+                                num_cols=int(self.num_antennas_ue/2),
+                                polarization="dual",
+                                polarization_type="cross",
+                                antenna_pattern="38.901",
+                                carrier_frequency=self.carrier_freq)
+        bs_array = AntennaArray(num_rows=1,
+                                num_cols=int(self.num_antennas_bs/2),
+                                polarization="dual",
+                                polarization_type="cross",
+                                antenna_pattern="38.901",
+                                carrier_frequency=self.carrier_freq)
         common_kwargs = {
             "model": self.scenario,
             "delay_spread": 100e-9,  # 可根据需要调整或作为参数传入
-            "ue_speed": 3.0,  # UE移动速度
-            "min_speed": 0.0
+            "max_speed": 3.0,  # UE移动速度
+            "min_speed": 0.0,
+            "ut_array": ut_array,
+            "bs_array": bs_array,
         }
         # generate CDL channel model (3GPP TR 38.901)
-        self.cdl_down = sionna.CDL(carrier_frequency=self.carrier_freq,
-                            seed=self.seed,
+        self.cdl_down = CDL(carrier_frequency=self.carrier_freq,
+                            direction="downlink",
                             **common_kwargs)
         # 上行信道模型（使用相同种子保证路径几何一致）
-        self.cdl_up = sionna.CDL(carrier_frequency=self.uplink_carrier_freq,
-                          seed=self.seed,  # 相同种子确保随机相位、角度等一致
+        self.cdl_up = CDL(carrier_frequency=self.carrier_freq,
+                          direction="uplink",
                           **common_kwargs)
 
         # config OFDM resource grid
-        self.ofdm_resource_grid = sionna.ofdm.ResourceGrid(
+        self.ofdm_resource_grid = ResourceGrid(
             num_ofdm_symbols=14,  # symbol number in one slot
             fft_size=self.num_subcarriers,
             subcarrier_spacing=self.subcarrier_spacing,
@@ -70,16 +86,16 @@ class SionnaCSIGenerator:
         )
 
         # stream channel
-        self.stream_manager = sionna.channel.StreamManagement()
+        self.stream_manager = sionna.phy.mimo.StreamManagement(np.array([[1]]), self.num_antennas_ue)
 
         # channel estimation（to generate CSI）
-        self.channel_estimator = sionna.ofdm.LMMSEEqualizer(
+        self.channel_estimator = LMMSEEqualizer(
             self.ofdm_resource_grid,
             self.stream_manager
         )
 
         print(f"CSI generator init Done! - scenario: {self.scenario}")
-        print(f"  antenna configuration: BS={self.num_antennas_bs}x UE={self.num_antennas_ue}")
+        print(f"  antenna configuration: BS={self.num_antennas_bs} x UE={self.num_antennas_ue}")
         print(f"  carrier frequency: {self.carrier_freq / 1e9:.2f}GHz, bandWidth: {self.bandwidth / 1e6:.0f}MHz")
 
     def generate_channel_matrix(self, batch_size: int = 32) -> Tuple[tf.Tensor, tf.Tensor]:
